@@ -19,22 +19,133 @@ After creating the tables, data for several customers and their respective order
 
 ### 2. Writing SQL Queries
 
-The second part of the project involves writing various SQL queries to explore and manipulate the data in the tables:
+The second part of the project involves writing various SQL queries to explore and manipulate the data in the tables. Below are the problem statements and detailed solutions:
 
-- **Problem 1: Customer Orders with Conditional Logic**  
-  Categorizes each order into "High", "Medium", or "Low" based on the total amount of the order.
+#### Problem 1: Customer Orders with Conditional Logic
 
-- **Problem 2: Grouping and Aggregation by Country**  
-  Groups orders by country and returns the total number of orders per country where the total number of orders is greater than one.
+**Task**: Write a query that returns the `CustomerName`, `Country`, `TotalAmount`, and a new column named `OrderCategory`. Use a `CASE` statement to categorize orders:
+- "High" if `TotalAmount` > 150
+- "Medium" if `TotalAmount` between 100 and 150
+- "Low" if `TotalAmount` < 100
 
-- **Problem 3: Combining Tables with Joins**  
-  Uses a `LEFT JOIN` to combine the Customers and Orders tables, ensuring all customers are listed even if they haven't placed any orders.
+**Solution**:
+```sql
+SELECT
+  c.CustomerName,
+  c.Country,
+  o.TotalAmount,
+  CASE
+    WHEN o.TotalAmount > 150 THEN 'High'
+    WHEN o.TotalAmount BETWEEN 100 AND 150 THEN 'Medium'
+    ELSE 'Low'
+  END AS OrderCategory
+FROM
+  Customers c
+JOIN
+  Orders o
+ON
+  c.CustomerID = o.CustomerID;
+```
+This query categorizes each order based on the `TotalAmount` column.
 
-- **Problem 4: Subqueries**  
-  Finds customers whose total order amount exceeds the average order amount across all customers using a subquery.
+#### Problem 2: Grouping and Aggregation by Country
 
-- **Problem 5: Using a CTE (Common Table Expression)**  
-  Calculates the average order amount per country using a CTE and returns customers with an order amount above their country’s average.
+**Task**: Return each `Country` and the total number of orders placed by customers in that country, but only include countries that have placed more than one order.
+
+**Solution**:
+```sql
+SELECT
+  c.Country,
+  COUNT(o.OrderID) AS TotalOrders
+FROM
+  Customers c
+JOIN
+  Orders o
+ON
+  c.CustomerID = o.CustomerID
+GROUP BY
+  c.Country
+HAVING
+  COUNT(o.OrderID) > 1;
+```
+This query counts the number of orders placed in each country and filters out countries with only one order using the `HAVING` clause.
+
+#### Problem 3: Combining Tables with Joins
+
+**Task**: Return the `CustomerName`, `OrderID`, and `TotalAmount` for all customers, including those who haven’t placed an order. Use a `LEFT JOIN` to ensure all customers are listed.
+
+**Solution**:
+```sql
+SELECT
+  c.CustomerName,
+  o.OrderID,
+  o.TotalAmount
+FROM
+  Customers c
+LEFT JOIN
+  Orders o
+ON
+  c.CustomerID = o.CustomerID;
+```
+This query uses a `LEFT JOIN` to return all customers, showing `NULL` for `OrderID` and `TotalAmount` where no orders have been placed.
+
+#### Problem 4: Subqueries
+
+**Task**: Write a query that returns the `CustomerName` and `TotalAmount` for customers whose total order amount exceeds the average order amount across all customers. Use a subquery to calculate the average.
+
+**Solution**:
+```sql
+SELECT
+  c.CustomerName,
+  o.TotalAmount
+FROM
+  Customers c
+JOIN
+  Orders o
+ON
+  c.CustomerID = o.CustomerID
+WHERE
+  o.TotalAmount > (SELECT AVG(TotalAmount) FROM Orders);
+```
+This query filters customers whose `TotalAmount` exceeds the average of all order totals, using a subquery in the `WHERE` clause.
+
+#### Problem 5: Using a CTE for Average Order Amount
+
+**Task**: Write a query using a CTE (Common Table Expression) that calculates the average order amount per country and then selects the customers who have an order amount above their country’s average.
+
+**Solution**:
+```sql
+WITH CountryAvg AS (
+  SELECT
+    c.Country,
+    AVG(o.TotalAmount) AS AvgAmount
+  FROM
+    Customers c
+  JOIN
+    Orders o
+  ON
+    c.CustomerID = o.CustomerID
+  GROUP BY
+    c.Country
+)
+SELECT
+  c.CustomerName,
+  o.TotalAmount,
+  ca.AvgAmount
+FROM
+  Customers c
+JOIN
+  Orders o
+ON
+  c.CustomerID = o.CustomerID
+JOIN
+  CountryAvg ca
+ON
+  c.Country = ca.Country
+WHERE
+  o.TotalAmount > ca.AvgAmount;
+```
+This query uses a `WITH` clause to define a CTE called `CountryAvg` that calculates the average order amount for each country. The main query then joins the result of the CTE with the orders table to find customers whose order totals exceed their country's average.
 
 ### Requirements
 
@@ -82,3 +193,5 @@ After running the queries, you'll see outputs in tabular format displaying custo
 This project is open-source and available under the [MIT License](https://opensource.org/licenses/MIT).
 
 ---
+
+
